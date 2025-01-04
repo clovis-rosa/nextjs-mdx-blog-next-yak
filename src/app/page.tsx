@@ -1,6 +1,4 @@
-// If you uncomment the "use server" line, it will work but no styles will be applied,
-
-"use server";
+// "use server";
 
 import Link from "next/link";
 import { getPosts } from "@/lib/posts-queries";
