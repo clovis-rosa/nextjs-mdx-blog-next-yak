@@ -28,10 +28,14 @@ export default async function HomePage() {
         {posts.map(({ slug, description, title, publishDate }) => (
           <div key={slug}>
             <PublishedDate date={publishDate} />
+
             <HeadingH2>
               <Link href={`/blog/${slug}`}>{title}</Link>
             </HeadingH2>
+
             <p>{description}</p>
+            {/* <Text>{description}</Text> */}
+
             <Link href={`/blog/${slug}`}>
               Ler mais
               <ArrowRight />
@@ -48,4 +52,11 @@ export default async function HomePage() {
 // const Article = styled.article`
 //   margin-bottom: 1.5rem;
 //   background-color: yellow;
+// `;
+
+// const Text = styled.p`
+//   color: blue;
+//   font-size: 1.5rem;
+//   font-family: monospace;
+//   margin-top: 0 !important;
 // `;
