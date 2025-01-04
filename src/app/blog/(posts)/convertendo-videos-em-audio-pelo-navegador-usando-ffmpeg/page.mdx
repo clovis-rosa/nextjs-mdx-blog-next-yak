@@ -1,0 +1,185 @@
+---
+title: Convertendo vídeos em áudio pelo navegador usando FFmpeg e WebAssembly (WASM)
+description: Nesse artigo, mostro como aproveitamos o poder do WebAssembly para manipular vídeos antes de envia-los ao back-end da aplicação.
+publishDate: 2024-07-24T11:00:00Z
+---
+
+import Image from "next/image";
+import audioConversionScreenshot from "./audio-conversion-progress-screenshot.jpg";
+
+## Conteúdo
+
+## O problema
+
+O Nivo foi criado inicialmente como uma ferramenta para gerar **transcrições de vídeo-aulas** e, a partir dessas transcrições, automatizar o processo de criar títulos, descrições e outros materiais usando **inteligência artificial**.
+
+Um dos primeiros desafios foi lidar com a **conversão de vídeos em áudio**, já que muitas APIs disponíveis para transcrição suportavam apenas arquivos de áudio. Além disso, arquivos de áudio são geralmente 90-95% mais leves que arquivos de vídeo, sendo uma opção mais eficiente.
+
+### FFmpeg
+
+A primeira ideia foi utilizar o [FFmpeg](https://www.ffmpeg.org/), um projeto open-source que permite manipular arquivos de áudio e vídeo.
+
+Integrado ao Node.js, podemos realizar download, conversão e upload utilizando [streams](https://nodejs.org/api/stream.html). Enquanto fazemos o download de um MP4, podemos convertê-lo para MP3 e, conforme a conversão é feita, fazer o upload do áudio para o serviço de armazenamento.
+
+## Solução 1: AWS Lambda + FFmpeg
+
+A primeira opção foi usar **FFmpeg** hospedado em uma função serverless (AWS Lambda), que recebia a URL do vídeo e salvava o áudio no storage.
+
+Funções serverless (ou lambdas, como são chamadas na AWS) são códigos que executam sob demanda em ambientes altamente isolados e com recursos limitados.
+
+Sempre que precisamos converter um vídeo, chamamos a URL da função, instanciando um container que realiza a conversão e, assim que possível, deixa de existir.
+
+Essa solução tem funcionado bem até hoje. No entanto, ela gera custos que poderiam ser evitados caso fosse possível (_spoiler: é possível_) realizar a conversão no client-side (navegador).
+
+Embora atualmente utilizemos **WebAssembly** para a conversão de vídeo em áudio, a solução de conversão via serverless ainda é funcional e usada quando os uploads são feitos via API.
+
+_Se você tiver interesse no código dessa função, me contate no [Twitter](https://x.com/dieegosf)!_
+
+## Solução 2: WebAssembly + FFmpeg
+
+A segunda solução foi usar o projeto [ffmpeg.wasm](https://ffmpegwasm.netlify.app/), que permite executar o FFmpeg diretamente no navegador do usuário via WebAssembly, realizando a conversão do vídeo sem utilizar recursos do nosso servidor.
+
+Essa opção funcionou brilhantemente, e agora cada upload de vídeo na plataforma inclui uma etapa automática de conversão para áudio.
+
+<Image
+  className=""
+  src={audioConversionScreenshot}
+  alt="Captura de tela da plataforma Nivo que destaca a barra de progresso de conversão de vídeo em áudio"
+  width={768}
+  height={290}
+/>
+
+Depois de convertido, o áudio é enviado para o Cloudflare R2 e utilizado posteriormente para a transcrição do vídeo.
+
+Agora, vamos ver como ficou o código dessa solução.
+
+### Instalação das dependências
+
+Para utilizar o ffmpeg.wasm, precisamos instalar as seguintes dependências:
+
+```sh
+npm i @ffmpeg/ffmpeg @ffmpeg/util
+```
+
+_No momento desse post, estou utilizando a versão 0.12.x._
+
+### Setup do ffmpeg.wasm
+
+Primeiro, inicializamos o **ffmpeg.wasm** e usamos uma variável global para evitar recarregar a biblioteca a cada nova conversão.
+
+```ts
+import { FFmpeg } from "@ffmpeg/ffmpeg";
+import { fetchFile, toBlobURL } from "@ffmpeg/util";
+
+export let ffmpeg: FFmpeg | null = null;
+
+export async function convertVideoToMP3(
+  inputFile: File,
+  onProgress: (progress: number) => void
+): Promise<File> {
+  ffmpeg = ffmpeg || new FFmpeg();
+
+  if (!ffmpeg.loaded) {
+    const baseURL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd";
+
+    await ffmpeg.load({
+      coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
+      wasmURL: await toBlobURL(
+        `${baseURL}/ffmpeg-core.wasm`,
+        "application/wasm"
+      ),
+    });
+  }
+
+  // Código para conversão (abaixo)
+}
+```
+
+Essa função recebe o arquivo de origem, representando o vídeo carregado pelo usuário, e permite monitorar o progresso da conversão com uma função enviada no segundo parâmetro.
+
+Usamos um CDN externo (unpkg) para carregar o FFmpeg, pois o arquivo WASM é pesado (3 MB), evitando o consumo de banda na nossa hospedagem.
+
+### Conversão de MP4 em MP3
+
+Agora que temos acesso ao arquivo de vídeo, vamos:
+
+1. Utilizar a função `writeFile` para que o ffmpeg.wasm tenha acesso ao vídeo;
+2. Atualizar a função de progresso para a função recebida no parâmetro;
+3. Converter para MP3 (usamos um bitrate de 32k para criar um arquivo leve);
+4. Converter o arquivo para uma instância da classe `File` do JavaScript e retorná-la;
+
+```ts
+ffmpeg.writeFile(inputFile.name, await fetchFile(inputFile)); // [!code highlight]
+
+const onFFmpegProgress = ({ progress }: { progress: number }) => {
+  const progressPercentage = Math.round(progress * 100);
+
+  onProgress(progressPercentage);
+};
+
+ffmpeg.on("progress", onFFmpegProgress); // [!code highlight]
+
+const outputId = crypto.randomUUID();
+
+await ffmpeg.exec([
+  // [!code highlight:10]
+  "-i",
+  inputFile.name,
+  "-vn",
+  "-b:a",
+  "32k",
+  "-acodec",
+  "libmp3lame",
+  `${outputId}.mp3`,
+]);
+
+const data = (await ffmpeg.readFile(`${outputId}.mp3`)) as Uint8Array;
+
+const audioFileBlob = new Blob([data.buffer], { type: "audio/mpeg" });
+
+const audioFile = new File([audioFileBlob], `${outputId}.mp3`, {
+  // [!code highlight:3]
+  type: "audio/mpeg",
+});
+
+ffmpeg.off("progress", onFFmpegProgress);
+
+return audioFile; // [!code highlight]
+```
+
+No momento da escrita deste artigo, o ffmpeg.wasm ainda tem suporte instável a múltiplas execuções simultâneas de comandos do FFmpeg, por isso, realizo a conversão de um vídeo por vez.
+
+### Upload do arquivo convertido
+
+Depois que o arquivo é convertido, realizo o upload diretamente para o Cloudflare R2 utilizando [URLs pré assinadas](https://docs.aws.amazon.com/pt_br/AmazonS3/latest/userguide/using-presigned-url.html) evitando enviar o arquivo para meu back-end para, só então, reenviá-lo para o storage.
+
+```ts
+await axios.put(uploadUrl, upload.audioFile, {
+  headers: { "Content-Type": upload.audioFile.type },
+  onUploadProgress(progressEvent) {
+    const progress = progressEvent.progress
+      ? Math.round(progressEvent.progress * 100)
+      : 0;
+
+    console.log("Progresso", progress);
+  },
+});
+```
+
+Para o upload, ainda utilizo o Axios, já que a Fetch API não possui suporte para monitorar o progresso do upload (XMLHttpRequest 💜).
+
+## Para o futuro...
+
+A possibilidade de utilizar o FFmpeg no navegador abriu portas para realizar diversas ações “pesadas” de conversão de vídeo e áudio no navegador, mas pode não ser a solução ideal para sempre.
+
+O ffmpeg.wasm ainda tem muitas limitações e uma performance bem inferior (já que depende dos recursos da máquina do usuário) ao FFmpeg executado em um ambiente ideal, além de haver um limite de 2 GB nos arquivos manipulados.
+
+Abaixo você pode ver um benchmark de performance com 50 execuções comparando a execução da conversão em um ambiente isolado comparado ao processo no navegador:
+
+| #      | FFmpeg  | ffmpeg.wasm |
+| ------ | ------- | ----------- |
+| Média  | 5.2 sec | 128.8 sec   |
+| Máximo | 5.3 sec | 130.7 sec   |
+| Mínimo | 5.1 sec | 126.6 sec   |
+
+Provavelmente, a longo prazo, o ideal será mover toda conversão de vídeos para a primeira solução via AWS Lambda e executar esse trabalho em background, mas com certeza a possibilidade de utilizar WebAssembly tornou o processo mais simples e menos custoso principalmente nesse início.

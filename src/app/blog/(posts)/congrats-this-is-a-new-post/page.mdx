@@ -1,0 +1,110 @@
+---
+title: Congrats! This is a new post
+description: This book is a treatise on the theory of ethics, very popular during the Renaissance.
+publishDate: 2024-12-02T10:00:00Z
+---
+
+import Image from "next/image";
+import audioConversionScreenshot from "./audio-conversion-progress-screenshot.jpg";
+
+## Conteúdo
+
+## O problema
+
+Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots in a piece of classical Latin literature from 45 BC, making it over 2000 years old. Richard McClintock, a Latin professor at Hampden-Sydney College in Virginia, looked up one of the more obscure Latin words, consectetur, from a Lorem Ipsum passage, and going through the cites of the word in classical literature, discovered the undoubtable source. Lorem Ipsum comes from sections 1.10.32 and 1.10.33 of "de Finibus Bonorum et Malorum" (The Extremes of Good and Evil) by Cicero, written in 45 BC. This book is a treatise on the theory of ethics, very popular during the Renaissance. The first line of Lorem Ipsum, "Lorem ipsum dolor sit amet..", comes from a line in section 1.10.32.
+
+<Image
+  className=""
+  src={audioConversionScreenshot}
+  alt="Captura de tela da plataforma Nivo que destaca a barra de progresso de conversão de vídeo em áudio"
+  width={768}
+  height={290}
+/>
+
+## Where does it come from?
+
+The standard chunk of Lorem Ipsum used since the 1500s is reproduced below for those interested. Sections 1.10.32 and 1.10.33 from "de Finibus Bonorum et Malorum" by Cicero are also reproduced in their exact original form, accompanied by English versions from the 1914 translation by H. Rackham.
+
+```tsx
+// Using 'typeof' to infer types
+const person = { name: "Alice", age: 30 };
+type PersonType = typeof person; // { name: string; age: number }
+
+// 'satisfies' to ensure a type matches but allows more specific types
+type Animal = { name: string };
+const dog = { name: "Buddy", breed: "Golden Retriever" } satisfies Animal;
+
+// Generics with 'extends' and default values
+function identity<T extends number | string = string>(arg: T): T {
+  return arg;
+}
+
+let str = identity(); // Default type is string
+let num = identity(42); // T inferred as number
+
+// 'extends' with interface and class
+interface HasLength {
+  length: number;
+}
+
+function logLength<T extends HasLength = string>(arg: T): void {
+  console.log(arg.length);
+}
+
+logLength("Hello"); // OK: string has length (default is string)
+logLength([1, 2, 3]); // OK: array has length
+// logLength(123);      // Error: number doesn't have length
+
+// 'typeof' with functions
+function add(x: number, y: number): number {
+  return x + y;
+}
+
+type AddFunctionType = typeof add; // (x: number, y: number) => number
+
+// Generic interfaces with 'extends' and default types
+interface Box<T extends object = { message: string }> {
+  content: T;
+}
+
+let defaultBox: Box = { content: { message: "Hello" } }; // Uses default type
+let customBox: Box<{ status: number }> = { content: { status: 200 } };
+
+// Complex example with 'satisfies' and default generics
+type Task = {
+  title: string;
+  description?: string;
+  completed: boolean;
+};
+
+const myTask = {
+  title: "Learn TypeScript",
+  completed: false,
+  priority: "High",
+} satisfies Task; // Allows priority but ensures Task structure
+
+// Generic function with default type
+function wrapInArray<T = string>(value: T): T[] {
+  return [value];
+}
+
+const stringArray = wrapInArray(); // Default to string
+const numberArray = wrapInArray(42); // T inferred as number
+
+/**
+ * Combines two generic types into a tuple.
+ *
+ * @template T - The first type.
+ * @template U - The second type.
+ * @param {T} first - The first value.
+ * @param {U} second - The second value.
+ * @returns {[T, U]} A tuple containing both values.
+ */
+function combine<T, U>(first: T, second: U): [T, U] {
+  return [first, second];
+}
+```
+
+## Why do we use it?
+
+It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters, as opposed to using 'Content here, content here', making it look like readable English. Many desktop publishing packages and web page editors now use Lorem Ipsum as their default model text, and a search for 'lorem ipsum' will uncover many web sites still in their infancy. Various versions have evolved over the years, sometimes by accident, sometimes on purpose (injected humour and the like).

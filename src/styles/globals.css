@@ -1,0 +1,218 @@
+:root {
+  --sh-class: #ffc799; /* coments */
+  --sh-sign: #a0a0a0; /* coments */
+  --sh-string: #99ffe4; /* coments */
+  --sh-keyword: #a0a0a0; /* coments */
+  --sh-comment: #8b8b8b94; /* coments */
+  --sh-jsxliterals: #ffc799; /* coments */
+  --sh-property: #73daca;
+  --sh-entity: #ffc799; /* coments */
+  --sh-identifier: #ffffff; /* custom */
+  --color-gray-200: rgb(229 231 235 1);
+}
+
+*,
+::after,
+::before,
+::backdrop,
+::file-selector-button {
+  border-color: var(--color-gray-200, currentColor);
+}
+
+/* SmolCSS.dev Document Styles - https://smolcss.dev/#smol-document-styles */
+
+body {
+  font-family: system-ui, sans-serif;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 5vh clamp(1rem, 5vw, 3rem) 1rem;
+  line-height: 1.5;
+  color: #222;
+}
+
+body > * {
+  --layout-spacing: max(8vh, 3rem);
+  --max-width: 70ch;
+  width: min(100%, var(--max-width));
+  margin-left: auto;
+  margin-right: auto;
+}
+
+main {
+  margin-top: var(--layout-spacing);
+}
+
+footer {
+  margin-top: auto;
+  padding-top: var(--layout-spacing);
+}
+
+footer p {
+  border-top: 1px solid #ccc;
+  padding-top: 0.25em;
+  font-size: 0.9rem;
+  color: #767676;
+}
+
+:is(h1, h2, h3) {
+  line-height: 1.2;
+}
+
+:is(h2, h3):not(:first-child) {
+  margin-top: 2em;
+}
+
+article * + * {
+  margin-top: 1em;
+}
+
+a {
+  color: navy;
+  text-underline-offset: 0.15em;
+}
+
+svg {
+  vertical-align: middle;
+  width: 1rem;
+}
+
+nav {
+  display: flex;
+  gap: 1em;
+  justify-content: center;
+  margin-top: 2em;
+
+  & a {
+    text-decoration: none;
+    color: #333;
+    padding: 0.5em 1em;
+    border-radius: 0.25em;
+    background-color: #f4f4f4;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: #e4e4e4;
+    }
+  }
+}
+
+pre code {
+  counter-reset: sh-line-number;
+}
+
+.sh__line::before {
+  counter-increment: sh-line-number 1;
+  content: counter(sh-line-number);
+  margin-right: 24px;
+  text-align: right;
+  color: #a4a4a4;
+}
+
+.sh__line {
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  line-height: 1px !important;
+}
+
+.md\:prose-lg
+  :where(pre):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+  font-size: 0.8888889em;
+  line-height: 1.5 !important;
+  margin-top: 2em;
+  margin-bottom: 2em;
+  border-radius: 0.375rem;
+  padding-top: 1em;
+  padding-inline-end: 1.5em;
+  padding-bottom: 1em;
+  padding-inline-start: 1.5em;
+}
+
+/* https://github.com/miraklasiaf/site/blob/main/app/global.css */
+
+pre {
+  background-color: #16161e;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  padding: 1rem;
+  margin: 1.5rem 0;
+  line-height: 1;
+}
+
+pre::-webkit-scrollbar {
+  display: none;
+}
+
+pre {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+code {
+  font-family: "Menlo", "Monaco", "Courier New", monospace;
+  font-size: 12px !important;
+  padding: 0.2em 0.4em;
+  border-radius: 0.3em;
+  background-color: var(--color-gray-100);
+}
+
+pre code {
+  background-color: transparent;
+  padding: 0;
+  border: none;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+pre code > span .sh__token--identifier {
+  color: white !important;
+}
+
+code:not(pre code) span {
+  font-weight: 500;
+  color: black !important;
+}
+
+pre code span {
+  font-weight: 500;
+}
+
+/* .prose pre {
+  counter-reset: step;
+  counter-increment: step 0;
+}
+
+.prose pre .line::before {
+  content: counter(step);
+  counter-increment: step;
+  width: 1rem;
+  margin-right: 1.5rem;
+  display: inline-block;
+  text-align: right;
+  color: #3f3f46;
+}
+
+.prose pre:has(span.line.highlighted) .line:not(.highlighted) span {
+  opacity: 0.4;
+}
+
+.prose pre .line:last-child:empty {
+  display: none;
+} */
+
+.prose :where(h2, h3, h4, h5, h6) a {
+  text-decoration: none;
+  margin-left: 0.5rem;
+  opacity: 0.6;
+}
+
+.prose :where(h2, h3, h4, h5, h6) a:hover {
+  opacity: 1;
+}
+
+.prose :where(h2, h3, h4, h5, h6) span.icon.icon-link::before {
+  content: "#";
+  font-size: 1rem;
+}
